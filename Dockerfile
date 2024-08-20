@@ -4,6 +4,12 @@ COPY package*.json ./
 RUN npm install --prod
 COPY ./src ./src
 EXPOSE 3001
-CMD ["node", "./src/index.js"]
+CMD ["node", "./src/server.js"]
 
 HEALTHCHECK CMD curl --fail http://localhost:3001 || exit 1
+
+#docker container rm -f receta-back
+#docker image rm -f receta-back-img
+
+#docker build -t receta-back-img .
+#docker container run -d --name receta-back --env-file .env -p 3001:3001 receta-back-img

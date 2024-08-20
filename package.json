@@ -2,7 +2,7 @@
   "name": "receta-back-node",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "src/server.js",
   "type": "module",
   "scripts": {
     "dev": "node --watch --env-file=.env src/server.js",
