@@ -116,6 +116,9 @@ export const logIn = async (req, res) => {
 				SUBSTR(u.mat_id, 1, (LENGTH(u.mat_id) - 1)) = ?
 				AND u.usu_clave = ?
 		`;
+
+		//$rematrdo = 'S'; // falta verificar campo rematriculado
+
 		let contramd5 = crypto.createHash("md5").update(password + "contra").digest("hex");
 		let results = await query(sql, [matricula, contramd5]);
 		if(results.data.length > 0) {

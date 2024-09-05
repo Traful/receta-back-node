@@ -229,7 +229,7 @@ export const setReceta = async (req, res) => {
 		let { timetratamiento, idespecialidad, idpaciente, idobrasocial, idlugaratencion, diagnostico, tolerancia, identreservada, medicamentos, motexcepcion, telefono } = req.body;
 
 		if(parseInt(idobrasocial, 10) !== 156 ) { //Si no es la obra social de municipio no se guarda lugar de atención
-			idlugaratencion = null
+			idlugaratencion = null;
 		}
 
 		let primerIdReceta = null;
@@ -238,10 +238,15 @@ export const setReceta = async (req, res) => {
 		let renglones = medicamentos.length;
 		if(parseInt(timetratamiento, 10) === 1) renglones = medicamentos.filter(m => parseInt(m.conidcion, 10) === 2).length;
 
+		let recetasIds = []; //Para generar PDF
+
 		for(let i = 0; i < timetratamiento; i++) {
 			let values = [ahora, req.ip, matricula, idespecialidad, idpaciente, idobrasocial, idlugaratencion, diagnostico, tolerancia, identreservada];
 			let ultimoId = await addReceta(values);
+
 			if(ultimoId) {
+				recetasIds.push(ultimoId); //Para generar PDF
+
 				// Auditoria
 				if(i === 0) {
 					primerIdReceta = ultimoId;
@@ -268,7 +273,7 @@ export const setReceta = async (req, res) => {
 				// Fin Obra Social 156 Excepcion
 
 				// Carga de medicamentos (tantas veces como recetas se generen 1 x 1)
-				await cargarTodosLosMedicamentos(ultimoId, medicamentos);
+				await cargarTodosLosMedicamentos(ultimoId, idobrasocial, medicamentos);
 				// Fin Carga de medicamentos (tantas veces como recetas se generen)
 
 				// Envío a Farmalink
@@ -283,6 +288,8 @@ export const setReceta = async (req, res) => {
 				resp.msg = "Ocurrión un error al cargar los datos de la prescripcion.";
 			}
 		}
+
+		//await generarPdfDeNuevaReceta(recetasIds);
 
 		resp.data = null;
 	} catch(error) {

@@ -51,7 +51,7 @@ export const addMedicamento = async (values) => {
 	return id;
 };
 
-export const cargarTodosLosMedicamentos = async (ultimoId, medicamentos) => {
+export const cargarTodosLosMedicamentos = async (ultimoId, idobrasocial, medicamentos) => {
 	for(let indexMed = 0; indexMed < medicamentos.length; indexMed++) {
 		let xMedicamento = medicamentos[indexMed];
 		let estadoAuditoria = 1;

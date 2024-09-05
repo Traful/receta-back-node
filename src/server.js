@@ -18,6 +18,8 @@ import rFarmalink from "./routes/r_farmalink.js";
 
 import rJitsi from "./routes/r_jitsi.js";
 
+import rPdf from "./routes/r_pdf.js";
+
 const app = express();
 
 // Settings
@@ -31,22 +33,14 @@ app.use(cors({
 	methods: ["GET", "POST", "DELETE", "UPDATE", "PUT", "PATCH"]
 }));
 
+// Static Middleware
+app.use(express.static("./public"));
+
 const base = `/api`;
 
 app.use((req, res, next) => {
-	const method = req.method;
-	const url = req.originalUrl;
-	const ip = req.ip || req.connection.remoteAddress; // Puedes usar req.ip o req.connection.remoteAddress
-
-	console.log(`[${new Date().toISOString()}] ${method} ${url} - IP: ${ip}`);
-
-	// Pasar al siguiente middleware o ruta
-	next();
-});
-
-app.use((req, res, next) => {
 	let authorized = [`${base}/users/login`, `${base}/jitsi/token`, `${base}/jitsi/invite`];
-	if(authorized.includes(req.originalUrl) || req.originalUrl.startsWith(`${base}/statics/`)) {
+	if(authorized.includes(req.originalUrl) || req.originalUrl.startsWith(`${base}/statics/`) || req.originalUrl.startsWith(`${base}/pdf/`)) {
 		next();
 		return;
 	}
@@ -77,6 +71,9 @@ app.use(`${base}/farmalink`, rFarmalink);
 
 app.use(`${base}/jitsi`, rJitsi);
 
+app.use(`${base}/pdf`, rPdf);
+
 app.listen(app.get("API_PORT"), () => {
 	console.log(`Api - Receta Eletrónica - Escuchando peticiones en el puerto: ${app.get("API_PORT")}`);
+	console.info(`http://localhost:${app.get("API_PORT")}${base}`);
 });

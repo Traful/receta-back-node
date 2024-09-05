@@ -13,10 +13,6 @@ export const generateToken = async (req, res) => {
 	};
 
 	let fields = req.body;
-
-	console.log(fields);
-	
-
 	let { nombre, email, avatar } = fields.user;
 
 	try {
