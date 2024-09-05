@@ -2,6 +2,7 @@ FROM node:21.1-alpine3.17
 WORKDIR /api
 COPY package*.json ./
 RUN npm install --omit=dev
+COPY ./public ./public
 COPY ./src ./src
 EXPOSE 3001
 CMD ["node", "./src/server.js"]

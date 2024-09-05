@@ -2,9 +2,12 @@ import puppeteer from "puppeteer";
 import QRCode from "qrcode";
 import fs from "fs";
 import { v4 as uuidv4 } from "uuid";
-import { API_BASE_URL } from "./../../config.js";
 import { obtenerFechaHoraMySQL } from "./../../utils/funcs.js";
+import { sendMailData } from "./utils.js";
 import { query } from "./../../db/db.js";
+import nodemailer from "nodemailer";
+import { API_BASE_URL, SMTP_HOST, SMTP_USERNAME, SMTP_SENDER_NAME, SMTP_PASSWORD, SMTP_PORT, URL_FONT_APP } from "./../../config.js";
+
 
 /*
 	require "phpmailer/class.phpmailer.php";
@@ -201,12 +204,9 @@ export const bodyHtmlReceta = async (idReceta, idOrden, tipo = "ORIGINAL", link 
 	}
 
 	
-	let qr = await generateQrCode(`${API_BASE_URL}/api/pdf/receta/${idReceta}/${idOrden}`);
+	let qr = await generateQrCode(link ? link : `${API_BASE_URL}/api/pdf/receta/${idReceta}/${idOrden}`);
 
-	
-	//let nameFile = `fo_${receta.matricprescr}.txt`;
-	let nameFile = `fo_123.txt`;
-
+	let nameFile = `fo_${receta.matricprescr}.txt`;
 	let filePath = `public/foto/${nameFile}`;
 	let foto = `${API_BASE_URL}/foto/`;
 
@@ -254,7 +254,7 @@ export const genPdfFromHtmlToFile = async (html, filename) => {
 	const browser = await puppeteer.launch({ headless: "new" });
 	const page = await browser.newPage();
 	await page.setContent(html);
-	await page.pdf({ path: "report.pdf", format: "A4", landscape: true, margin: { left: 10, right: 10, top: 10, bottom: 10 } });
+	await page.pdf({ path: filename, format: "A4", landscape: true, margin: { left: 10, right: 10, top: 10, bottom: 10 } });
 	await browser.close();
 };
 
@@ -269,7 +269,7 @@ export const genPdfFromHtml = async (html) => {
 
 export const generarPdfDeNuevaReceta = async (recetasIds) => {
 	let sql = "SELECT MAX(p.nro_orden) AS renglones FROM rec_prescrmedicamento p WHERE p.idreceta = ?";
-	let bodyHtmlReceta = `
+	let bodyHtml = `
 	<head>
 		<style>
 			.page-break {
@@ -283,11 +283,66 @@ export const generarPdfDeNuevaReceta = async (recetasIds) => {
 		let idReceta = recetasIds[index];
 		let results = await query(sql, [idReceta]);
 		let renglones = parseInt(results.data[0].renglones, 10);
-		for(let indexR = 0; indexR <= renglones; indexR++) {
-			bodyHtmlReceta = bodyHtmlReceta = await bodyHtmlReceta(idReceta, indexR, tipo = "ORIGINAL", link = null);
-			
+		for(let indexR = 1; indexR <= renglones; indexR++) {
+			bodyHtml = bodyHtml + await bodyHtmlReceta(idReceta, indexR, "ORIGINAL", null);
+			if(indexR < renglones) bodyHtml = bodyHtml + `<div class="page-break"></div>`;
 		}
+		if(index < (recetasIds.length - 1)) bodyHtml = bodyHtml + `<div class="page-break"></div>`;
 	}
-	bodyHtmlReceta = bodyHtmlReceta + "</body>";
-	await genPdfFromHtmlToFile(bodyHtmlReceta)
+	bodyHtml = bodyHtml + "</body>";
+	let name = generatePdfName();
+	let filename = `public/pdfs/${name}`;
+	await genPdfFromHtmlToFile(bodyHtml, filename);
+	return name;
+};
+
+export const sendMailReceta = async (filename, paciente, email) => {
+	let resp = {
+		ok: true,
+		msg: "",
+		data: null
+	};
+
+	let transporter = nodemailer.createTransport({
+		host: SMTP_HOST, // El host de tu servidor SMTP
+		port: SMTP_PORT, // El puerto (puede variar, 465 para SSL)
+		secure: parseInt(SMTP_PORT) === 465 ? true : false,
+		auth: {
+			user: SMTP_USERNAME,
+			pass: SMTP_PASSWORD
+		}
+	});
+
+	let htmlBody = `
+		<h4>Estimado Sr/a ${paciente}</h4>
+		<p>Adjuntamos al presente su prescripción médica.</p>
+		<p>Sin otro particular saluda a Ud. muy atte.</p>
+	`;
+
+	// Configura el contenido del correo
+	let mailOptions = {
+		from: SMTP_USERNAME, // Remitente
+		to: email, // Destinatario
+		subject: "Telemedicina - Consulta Médica", // Asunto
+		//text: "Contenido del correo en texto plano", // Contenido en texto plano
+		html: htmlBody, // O puedes enviar el contenido en HTML
+		attachments: [
+			{
+				filename: "receta.pdf", // Nombre del archivo adjunto
+				path: `public/pdfs/${filename}` // Ruta al archivo en tu sistema
+			}
+		]
+	};
+
+	// Enviar el correo
+	let envio = await sendMailData(transporter, mailOptions);
+
+	if(envio.ok) {
+		resp.messageId = envio.messageId;
+	} else {
+		resp.ok = false;
+		resp.msg = envio.msg;
+	}
+
+	return resp;
 };

@@ -1,4 +1,4 @@
-export const API_BASE_URL = process.env.API_BASE_URL || "http://localhost";
+export const API_BASE_URL = process.env.API_BASE_URL || "http://localhost:3001";
 export const API_PORT = process.env.API_PORT || 3001;
 export const API_JWT_KEY = process.env.API_JWT_KEY || "1234567890";
 

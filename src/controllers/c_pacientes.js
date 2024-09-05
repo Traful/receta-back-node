@@ -1,8 +1,9 @@
 import { query } from "./../db/db.js";
 import { addReceta, addAuditoria, addMuniExcepcion, cargarTodosLosMedicamentos } from "./helpers/utils.js";
 import { sendToFarmaLink } from "./helpers/farmalink.js";
-import Validate from "../utils/validate.js";
-import { obtenerFechaHoraMySQL, sumarDiasAFecha } from "../utils/funcs.js";
+import Validate from "./../utils/validate.js";
+import { obtenerFechaHoraMySQL, sumarDiasAFecha } from "./../utils/funcs.js";
+import { generarPdfDeNuevaReceta, sendMailReceta } from "./helpers/bodys.js";
 
 export const getPacienteById = async (req, res) => {
 	let resp = {
@@ -289,9 +290,14 @@ export const setReceta = async (req, res) => {
 			}
 		}
 
-		//await generarPdfDeNuevaReceta(recetasIds);
-
-		resp.data = null;
+		let newFile = await generarPdfDeNuevaReceta(recetasIds);
+		if(newFile) {
+			let sqlUpdate = `UPDATE rec_receta SET num_receta_ofuscada = ? WHERE idreceta IN (${recetasIds.join(", ")})`;
+			await query(sqlUpdate, [newFile]);
+			resp.data = newFile;
+			//Lo único que tengo es el idpaciente, necesito el nombre y el mail
+			resp.mail = await sendMailReceta(newFile, "Luna, Mario Antonio", "federiconj@gmail.com");
+		}
 	} catch(error) {
 		console.error(error.message);
 		resp = {

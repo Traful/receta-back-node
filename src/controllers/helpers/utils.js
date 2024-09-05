@@ -69,3 +69,16 @@ export const cargarTodosLosMedicamentos = async (ultimoId, idobrasocial, medicam
 		await addMedicamento([ultimoId, (indexMed + 1), xMedicamento.id, xMedicamento.codigo, xMedicamento.cantidad, xMedicamento.dosis, '', '', estadoAuditoria]);
 	}
 };
+
+export const sendMailData = (transporter, mailOptions) => {
+	return new Promise((resolve, reject) => {
+		transporter.sendMail(mailOptions, (error, info) => {
+			if(error) {
+				console.error(error);
+				reject({ ok: true, msg: `Error al enviar el correo: ${error.message}` })
+			} else {
+				resolve({ ok: true, messageId: info.messageId });
+			}
+		});
+	});
+};

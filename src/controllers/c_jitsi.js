@@ -4,6 +4,7 @@ import fs from "fs/promises";
 import { JITSI_APP_ID, JITSI_KID, SMTP_HOST, SMTP_USERNAME, SMTP_SENDER_NAME, SMTP_PASSWORD, SMTP_PORT, URL_FONT_APP } from "../config.js";
 import { generateAccessToken } from "../utils/funcs.js";
 import nodemailer from "nodemailer";
+import { sendMailData } from "./helpers/utils.js";
 
 export const generateToken = async (req, res) => {
 	let resp = {
@@ -37,19 +38,6 @@ export const generateToken = async (req, res) => {
 	}
 
 	res.status(resp.ok ? 200 : 409).json(resp);
-};
-
-const sendmailData = (transporter, mailOptions) => {
-	return new Promise((resolve, reject) => {
-		transporter.sendMail(mailOptions, (error, info) => {
-			if(error) {
-				console.error(error);
-				reject({ ok: true, msg: `Error al enviar el correo: ${error.message}` })
-			} else {
-				resolve({ ok: true, messageId: info.messageId });
-			}
-		});
-	})
 };
 
 export const sendInviteLink = async (req, res) => {
@@ -100,7 +88,7 @@ export const sendInviteLink = async (req, res) => {
 			};
 
 			// Enviar el correo
-			let envio = await sendmailData(transporter, mailOptions);
+			let envio = await sendMailData(transporter, mailOptions);
 			if(envio.ok) {
 				resp.token = token;
 				resp.messageId = envio.messageId;
